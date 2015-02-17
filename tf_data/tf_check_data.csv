@@ -1,0 +1,71 @@
+measrmnt. timestamp,parent TF,child  TF,X from TF,Y from TF,Z from TF,D from TF,X    Real,Y    Real,Z    Real,Dist Real,dX R - TF,dY R - TF,dZ R - TF,dD   R-TF,Max Error
+2014-07-31 14:10:41,base_link,neck_mount,0.18,0,1.652,1.662,,,1.652,1.652,,,0,-0.01,0
+2014-07-31 14:10:54,base_link, neck_pan,0.18,0,1.692,1.702,,,1.691,1.691,,,-0.001,-0.011,-0.001
+2014-07-31 14:11:04,base_link,neck_tilt_mount,0.18,0,1.732,1.741,,,1.72,1.72,,,-0.012,-0.021,-0.012
+2014-07-31 14:11:12,base_link,neck_tilt,0.18,0,1.732,1.741,,,1.72,1.72,,,-0.012,-0.021,-0.012
+2014-07-31 14:11:26,base_link,camera_rgb_frame,0.21,-0.003,1.764,1.777,1.77,,,1.77,1.56,,,-0.007,1.56
+2014-07-31 14:11:44,base_link,     arms,0.121,0,0.99,0.997,0.99,,,0.99,0.869,,,-0.007,0.869
+2014-07-31 14:12:00,     arms,right_arm,-0.195,0,0,0.195,0,0.2,,0.2,0.195,0.2,,0.005,0.2
+2014-07-31 14:12:31,right_arm,neck_mount,-0.195,-0.662,0.059,0.693,,-0.665,,-0.665,,-0.003,,-0.028,-0.003
+2014-07-31 14:12:38,lift_link,     arms,0.101,0,0.44,0.451,0,,0.43,0.43,,,-0.01,-0.021,-0.01
+2014-07-31 14:12:55,lift_link,neck_mount,0.16,0,1.102,1.114,,,1.105,1.105,,,0.003,-0.009,0.003
+2014-07-31 14:13:03,neck_mount, neck_pan,0,0,0.04,0.04,,,0.04,0.04,,,0,0,0
+2014-07-31 14:13:12, neck_pan,neck_tilt_mount,0,0,0.04,0.04,,,0.041,0.041,,,0.001,0.001,0.001
+2014-07-31 14:13:28,neck_tilt_mount,neck_tilt,0,0,0,0,0,,,0,0,,,0,0
+2014-07-31 14:13:43,neck_tilt,camera_rgb_frame,0,0.005,0.044,0.044,,,0.044,0.044,,,0,0,0
+2014-07-31 14:13:57,neck_mount,neck_tilt_mount,0,0,0.08,0.08,,,0.081,0.081,,,0.001,0.001,0.001
+2014-07-31 14:14:08,     arms,camera_rgb_frame,-0.003,0.774,0.089,0.779,,0.785,,0.785,,0.011,,0.006,0.011
+2014-07-31 14:14:29,lift_link,camera_rgb_frame,0.19,-0.003,1.214,1.229,,,1.22,1.22,,,0.006,-0.009,0.006
+measrmnt. timestamp,parent TF,child  TF,X from TF,Y from TF,Z from TF,D from TF,X    Real,Y    Real,Z    Real,Dist Real,dX R - TF,dY R - TF,dZ R - TF,dD   R-TF,Max Error
+measrmnt. timestamp,parent TF,child  TF,X from TF,Y from TF,Z from TF,D from TF,X    Real,Y    Real,Z    Real,Dist Real,dX R - TF,dY R - TF,dZ R - TF,dD   R-TF,Max Error
+measrmnt. timestamp,parent TF,child  TF,X from TF,Y from TF,Z from TF,D from TF,X    Real,Y    Real,Z    Real,Dist Real,dX R - TF,dY R - TF,dZ R - TF,dD   R-TF,Max Error
+measrmnt. timestamp,parent TF,child  TF,X from TF,Y from TF,Z from TF,D from TF,X    Real,Y    Real,Z    Real,Dist Real,dX R - TF,dY R - TF,dZ R - TF,dD   R-TF,Max Error
+2014-08-01 09:49:51,camera_link,camera_rgb_frame,0.0,0.045,0.0,0.045,0.0,0.0,1e-06,1e-06,,,1e-06,-0.044999,1e-06
+measrmnt. timestamp,parent TF,child  TF,X from TF,Y from TF,Z from TF,D from TF,X    Real,Y    Real,Z    Real,Dist Real,dX R - TF,dY R - TF,dZ R - TF,dD   R-TF,Max Error
+2014-08-01 09:50:10,camera_link,camera_rgb_frame,0.0,0.045,0.0,0.045,0.001,0.0001,0.001,0.0014177446878757825,0.001,-0.044899999999999995,0.001,-0.043582255312124216,0.001
+2014-08-01 09:50:16,camera_link,camera_rgb_frame,0.0,0.045,0.0,0.045,0.001,0.001,0.001,0.0017320508075688774,0.001,-0.044,0.001,-0.04326794919243112,0.001
+measrmnt. timestamp,parent TF,child  TF,X from TF,Y from TF,Z from TF,D from TF,X    Real,Y    Real,Z    Real,Dist Real,dX R - TF,dY R - TF,dZ R - TF,dD   R-TF,Max Error
+measrmnt. timestamp,parent TF,child  TF,X from TF,Y from TF,Z from TF,D from TF,X    Real,Y    Real,Z    Real,Dist Real,dX R - TF,dY R - TF,dZ R - TF,dD   R-TF,Max Error
+measrmnt. timestamp,parent TF,child  TF,X from TF,Y from TF,Z from TF,D from TF,X    Real,Y    Real,Z    Real,Dist Real,dX R - TF,dY R - TF,dZ R - TF,dD   R-TF,Max Error
+2014-08-01 10:03:32,base_link,neck_tilt_mount,0.18000000715255737,0.0,1.7319999486207962,1.7413281783160122,,,1.732,1.732,,,5.137920378039951e-08,-0.009328178316012181,5.137920378039951e-08
+2014-08-01 10:03:59,base_link,map,0.16931131769603483,0.10183552735827395,0.0,0.19757731887113308,0.0001,,1e-06,0.00010000499987500625,-0.16921131769603484,,1e-06,-0.19747731387125808,1e-06
+measrmnt. timestamp,parent TF,child  TF,X from TF,Y from TF,Z from TF,D from TF,X    Real,Y    Real,Z    Real,Dist Real,dX R - TF,dY R - TF,dZ R - TF,dD   R-TF,Max Error
+measrmnt. timestamp,parent TF,child  TF,X from TF,Y from TF,Z from TF,D from TF,X    Real,Y    Real,Z    Real,Dist Real,dX R - TF,dY R - TF,dZ R - TF,dD   R-TF,Max Error
+measrmnt. timestamp,parent TF,child  TF,X from TF,Y from TF,Z from TF,D from TF,X    Real,Y    Real,Z    Real,Dist Real,dX R - TF,dY R - TF,dZ R - TF,dD   R-TF,Max Error
+measrmnt. timestamp,parent TF,child  TF,X from TF,Y from TF,Z from TF,D from TF,X    Real,Y    Real,Z    Real,Dist Real,dX R - TF,dY R - TF,dZ R - TF,dD   R-TF,Max Error
+2014-08-01 10:40:52,base_link,neck_tilt,0.18000000715255737,0.0,1.7319999486207962,1.7413281783160122,,,1.732,1.732,,,5.137920378039951e-08,-0.009328178316012181,5.137920378039951e-08
+2014-08-01 10:45:37,base_link,right_arm,0.12100000310377887,0.19499999284744263,0.9900000086263521,1.0162509606597154,,,0.995,0.995,,,0.004999991373647927,-0.021250960659715434,0.004999991373647927
+measrmnt. timestamp,parent TF,child  TF,X from TF,Y from TF,Z from TF,D from TF,X    Real,Y    Real,Z    Real,Dist Real,dX R - TF,dY R - TF,dZ R - TF,dD   R-TF,Max Error
+2014-08-01 10:55:52,base_link,neck_tilt,    0.180,    0.000,    1.732,    1.741,    1.732,,,    1.732,    1.552,,,   -0.009,    1.552
+measrmnt. timestamp,parent TF,child  TF,X from TF,Y from TF,Z from TF,D from TF,X    Real,Y    Real,Z    Real,Dist Real,dX R - TF,dY R - TF,dZ R - TF,dD   R-TF,Max Error
+2014-08-01 10:56:40,base_link,neck_tilt,    0.180,    0.000,    1.732,    1.741,,,    1.732,    1.732,,,    0.000,   -0.009,    0.000
+measrmnt. timestamp,parent TF,child  TF,X from TF,Y from TF,Z from TF,D from TF,X    Real,Y    Real,Z    Real,Dist Real,dX R - TF,dY R - TF,dZ R - TF,dD   R-TF,Max Error
+2014-08-01 11:01:21,base_link,neck_tilt,    0.180,    0.000,    1.732,    1.741,,,    1.732,    1.732,,,    0.000,   -0.009,    0.000
+2014-08-01 11:02:33,base_link,right_arm,    0.121,    0.195,    0.990,    1.016,    0.995,,,    0.995,    0.874,,,   -0.021,    0.874
+measrmnt. timestamp,parent TF,child  TF,X from TF,Y from TF,Z from TF,D from TF,X    Real,Y    Real,Z    Real,Dist Real,dX R - TF,dY R - TF,dZ R - TF,dD   R-TF,Max Error
+2014-08-01 11:02:53,base_link,neck_tilt,    0.180,    0.000,    1.732,    1.741,,,    1.732,    1.732,,,    0.000,   -0.009,    0.000
+2014-08-01 11:03:01,base_link,right_arm,    0.121,    0.195,    0.990,    1.016,,,    0.995,    0.995,,,    0.005,   -0.021,    0.005
+measrmnt. timestamp,parent TF,child  TF,X from TF,Y from TF,Z from TF,D from TF,X    Real,Y    Real,Z    Real,Dist Real,dX R - TF,dY R - TF,dZ R - TF,dD   R-TF,Max Error
+2014-08-01 11:04:17,base_link,neck_tilt,    0.180,    0.000,    1.732,    1.741,,,    1.732,    1.732,,,    0.000,   -0.009,    0.000
+2014-08-01 11:04:26,base_link,right_arm,    0.121,    0.195,    0.990,    1.016,,,    0.995,    0.995,,,    0.005,   -0.021,    0.005
+measrmnt. timestamp,parent TF,child  TF,X from TF,Y from TF,Z from TF,D from TF,X    Real,Y    Real,Z    Real,Dist Real,dX R - TF,dY R - TF,dZ R - TF,dD   R-TF,Max Error
+2014-08-01 11:05:25,base_link,neck_tilt,    0.180,    0.000,    1.732,    1.741,,,    1.732,    1.732,,,    0.000,   -0.009,    0.000
+2014-08-01 11:05:32,base_link,right_arm,    0.121,    0.195,    0.990,    1.016,,,    0.995,    0.995,,,    0.005,   -0.021,    0.005
+measrmnt. timestamp,parent TF,child  TF,X from TF,Y from TF,Z from TF,D from TF,X    Real,Y    Real,Z    Real,Dist Real,dX R - TF,dY R - TF,dZ R - TF,dD   R-TF,Max Error
+measrmnt. timestamp,parent TF,child  TF,X from TF,Y from TF,Z from TF,D from TF,X    Real,Y    Real,Z    Real,Dist Real,dX R - TF,dY R - TF,dZ R - TF,dD   R-TF,Max Error
+2014-08-01 11:06:09,base_link,neck_tilt,    0.180,    0.000,    1.732,    1.741,,,    1.732,    1.732,,,    0.000,   -0.009,    0.000
+2014-08-01 11:06:20,base_link,right_arm,    0.121,    0.195,    0.990,    1.016,,,    0.995,    0.995,,,    0.005,   -0.021,    0.005
+measrmnt. timestamp,parent TF,child  TF,X from TF,Y from TF,Z from TF,D from TF,X    Real,Y    Real,Z    Real,Dist Real,dX R - TF,dY R - TF,dZ R - TF,dD   R-TF,Max Error
+2014-08-01 11:08:03,base_link,neck_tilt,    0.180,    0.000,    1.732,    1.741,,,    1.732,    1.732,,,    0.000,   -0.009,    0.000
+2014-08-01 11:08:30,base_link,right_arm,    0.121,    0.195,    0.990,    1.016,,,    0.995,    0.995,,,    0.005,   -0.021,    0.005
+measrmnt. timestamp,parent TF,child  TF,X from TF,Y from TF,Z from TF,D from TF,X    Real,Y    Real,Z    Real,Dist Real,dX R - TF,dY R - TF,dZ R - TF,dD   R-TF,Max Error
+2014-08-01 11:13:55,base_link,neck_tilt,    0.180,    0.000,    1.732,    1.741,,,    1.732,    1.732,,,    0.000,   -0.009,    0.000
+2014-08-01 11:14:03,base_link,right_arm,    0.121,    0.195,    0.990,    1.016,,,    0.995,    0.995,,,    0.005,   -0.021,    0.005
+2014-08-01 11:15:00,lift_link,right_arm,    0.101,    0.195,    0.440,    0.492,,,    0.430,    0.430,,,   -0.010,   -0.062,   -0.010
+measrmnt. timestamp,parent TF,child  TF,X from TF,Y from TF,Z from TF,D from TF,X    Real,Y    Real,Z    Real,Dist Real,dX R - TF,dY R - TF,dZ R - TF,dD   R-TF,Max Error
+measrmnt. timestamp,parent TF,child  TF,X from TF,Y from TF,Z from TF,D from TF,X    Real,Y    Real,Z    Real,Dist Real,dX R - TF,dY R - TF,dZ R - TF,dD   R-TF,Max Error
+2014-08-01 12:15:33,base_link,right_arm_grippermarker_observed,    0.657,    0.017,    1.223,    1.389,,,    1.222,    1.222,,,   -0.001,   -0.167,   -0.001
+measrmnt. timestamp,parent TF,child  TF,X from TF,Y from TF,Z from TF,D from TF,X    Real,Y    Real,Z    Real,Dist Real,dX R - TF,dY R - TF,dZ R - TF,dD   R-TF,Max Error
+measrmnt. timestamp,parent TF,child  TF,X from TF,Y from TF,Z from TF,D from TF,X    Real,Y    Real,Z    Real,Dist Real,dX R - TF,dY R - TF,dZ R - TF,dD   R-TF,Max Error
+measrmnt. timestamp,parent TF,child  TF,X from TF,Y from TF,Z from TF,D from TF,X    Real,Y    Real,Z    Real,Dist Real,dX R - TF,dY R - TF,dZ R - TF,dD   R-TF,Max Error
+2014-08-01 12:19:40,base_link,right_arm_grippermarker_observed,    0.785,    0.040,    1.181,    1.419,,,    1.179,    1.179,,,   -0.002,   -0.240,   -0.002
