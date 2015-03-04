@@ -8,6 +8,7 @@ import time
 import pandas as pd
 import numpy as np
 import sys
+import re
 
 print iwconfig("eth7")
 # print ping('8.8.8.8', c=1)
@@ -110,6 +111,48 @@ class IwConfig(object):
         self.data.to_csv(path_or_buf="wlan.csv", mode="a")
 
 
+class Ping(object):
+    def __init__(self, host):
+        self.host = host
+        self.data = pd.DataFrame(columns=['time', 'ttl'])
+        self.previous_measurement = {col:np.nan for col in self.data.columns}
+
+        self.pattern = r"(?P<bytes>\w+) bytes from (?P<host>([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)): icmp_req=(?P<icmp_req>\w+) ttl=(?P<ttl>\w+) time=(?P<time>\w+)"
+
+    def measure_once(self):
+        output = ping(self.host, c=1)
+        raw = output.split("\n")[1]
+
+        measurement = {col:np.nan for col in self.data.columns}
+
+        match = re.match(self.pattern, raw)
+        if match:
+            # measurement['bytes'] = match.group('bytes')
+            # measurement['host'] = match.group('host')
+            # measurement['icmp_req'] = match.group('icmp_req')
+            measurement['ttl'] = match.group('ttl')
+            measurement['time'] = match.group('time')
+
+        timestamp = datetime.datetime.now()
+
+        self.previous_measurement = measurement
+
+        try:
+            self.data.loc[timestamp] = measurement
+        except ValueError, ve:
+            print "Error ({0}) on data {1}".format(ve, raw)
+
+    def measure(self):
+        while True:
+            try:
+                self.measure_once()
+                time.sleep(0.5)
+            except KeyboardInterrupt:
+                break
+        self.data.to_csv(path_or_buf="ping.csv", mode="a")
+
 if __name__ == "__main__":
-    iw = IwConfig("eth7")
-    iw.measure()
+    # iw = IwConfig("eth7")
+    # iw.measure()
+    p = Ping("8.8.8.8")
+    p.measure()
