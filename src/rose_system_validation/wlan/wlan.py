@@ -6,6 +6,7 @@ from sh import iwconfig, ping, traceroute  # sh creates Python fucntions around 
 import datetime
 import time
 import pandas as pd
+import numpy as np
 
 print iwconfig("eth7")
 # print ping('8.8.8.8', c=1)
@@ -69,12 +70,15 @@ class IwConfig(object):
                 if len(split) >= 2:
                     yield split[0], split[1].replace('"', '')
         
-        fields = dict(parse_raw(parts))
+        fields = {col:np.nan for col in self.data.columns}
+        fields.update(dict(parse_raw(parts)))
         timestamp = datetime.datetime.now()
 
         # print "{0} : {1}".format(timestamp, fields)
-
-        self.data.loc[timestamp] = fields
+        try:
+            self.data.loc[timestamp] = fields
+        except ValueError, ve:
+            print "Error ({0}) on data {1}".format(ve, raw)
 
     def measure(self):
         while True:
