@@ -7,12 +7,14 @@ import datetime
 import time
 import pandas as pd
 import numpy as np
+import sys
 
 print iwconfig("eth7")
 # print ping('8.8.8.8', c=1)
 # print traceroute('8.8.8.8')
 
-PRINT_CHANGES_OF = ["Access Point", "Link Quality"]
+PRINT_CHANGES_OF = ["Access Point", "Link Quality", "Bit Rate", "Signal level"]
+KEEP_CHANGES_OF = ["Access Point"]
 
 class IwConfig(object):
     def __init__(self, interface='wlan0'):
@@ -84,7 +86,12 @@ class IwConfig(object):
         # print "{0} : {1}".format(timestamp, measurement)
         changes = self.format_differences(measurement, self.previous_measurement)
         if changes:
-            print("{0}: {1}".format(timestamp, changes))
+            print "{0}: {1}".format(timestamp, changes)
+
+            # If the change is not that important, we keep overwriting the output in console.
+            if not any([(keep in changes) for keep in KEEP_CHANGES_OF]):
+                sys.stdout.write("\033[F") # Cursor up one line
+                sys.stdout.write("\033[K") # Clear to the end of line
 
         self.previous_measurement = measurement
 
