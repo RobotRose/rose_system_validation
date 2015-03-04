@@ -10,6 +10,9 @@ import pandas as pd
 import numpy as np
 import sys
 import re
+import tf
+
+from rose_system_validation.recorder import Recorder, ros_time_to_datetime
 
 print iwconfig("eth7")
 # print ping('8.8.8.8', c=1)
@@ -181,10 +184,49 @@ class Combined(object):
 
         self.previous_measurement = measurement
 
+class TfRecorder(Recorder):
+
+    """Records TF messages for later analysis"""
+    def __init__(self, listener, target_frame, source_frame, timeout=rospy.Duration(1.0)):
+        self.headers = [ "tf.pos.x", "tf.pos.y","tf.pos.z", 
+                    "tf.ori.x", "tf.ori.y", "tf.ori.z", "tf.ori.w"]
+        Recorder.__init__(self, headers=self.headers, description="TF-{0}-{1}".format(target_frame, source_frame).replace("/",'')) # 8 columns: time, position.{x,y,z}, orientation.{x,y,z,w}
+        self.tf = listener
+        self.timeout = timeout
+
+        self.target_frame, self.source_frame = target_frame, source_frame
+
+    def measure_once(self, *args, **kwargs):
+        self.recording = True
+        data = self.record_tf_at()
+        measurements = {k:np.nan for k in self.headers}
+        try:
+            measurements = dict(pair for pair in zip(self.headers, data))
+        except:
+            pass #TODO: Fix exception here
+        return measurements
+
+    def record_tf_at(self):
+        if self.recording:
+            try:
+                self.tf.waitForTransform(self.target_frame, self.source_frame, rospy.Time(0), self.timeout)
+                time = self.tf.getLatestCommonTime(self.target_frame, self.source_frame)
+                position, quaternion = self.tf.lookupTransform(self.target_frame, self.source_frame, time)  # -> position, quaternion
+
+                row = [ position[0], position[1], position[2],
+                        quaternion[0], quaternion[1], quaternion[2], quaternion[3]]
+
+                self.add_row(ros_time_to_datetime(time), row)
+
+                return row
+            except tf.Exception, e:
+                rospy.logerr(e)
+
 if __name__ == "__main__":
     rospy.init_node("wireless_monitor")
 
-    combined = Combined([IwConfig("eth7"), Ping("8.8.8.8")])
+    tflistener = tf.TransformListener()
+    combined = Combined([IwConfig("eth7"), Ping("8.8.8.8"), TfRecorder(tflistener, "/map", "/base_link")])
     combined.start()
 
     rospy.spin()
