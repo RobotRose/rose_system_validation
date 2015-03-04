@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 """Get wireless LAN parameters"""
+import rospy
 
 from sh import iwconfig, ping, traceroute  # sh creates Python fucntions around command line utilities.
 import datetime
@@ -83,24 +84,6 @@ class IwConfig(object):
         
         measurement = {col:np.nan for col in self.data.columns}
         measurement.update(dict(parse_raw(parts)))
-        timestamp = datetime.datetime.now()
-
-        # print "{0} : {1}".format(timestamp, measurement)
-        changes = self.format_differences(measurement, self.previous_measurement)
-        if changes:
-            print "{0}: {1}".format(timestamp, changes)
-
-            # If the change is not that important, we keep overwriting the output in console.
-            if not any([(keep in changes) for keep in KEEP_CHANGES_OF]):
-                sys.stdout.write("\033[F") # Cursor up one line
-                sys.stdout.write("\033[K") # Clear to the end of line
-
-        self.previous_measurement = measurement
-
-        try:
-            self.data.loc[timestamp] = measurement
-        except ValueError, ve:
-            print "Error ({0}) on data {1}".format(ve, raw)
 
         return measurement
 
@@ -137,15 +120,6 @@ class Ping(object):
             measurement['ttl'] = match.group('ttl')
             measurement['time'] = match.group('time')
 
-        timestamp = datetime.datetime.now()
-
-        self.previous_measurement = measurement
-
-        try:
-            self.data.loc[timestamp] = measurement
-        except ValueError, ve:
-            print "Error ({0}) on data {1}".format(ve, raw)
-
         return measurement
 
     def measure(self):
@@ -157,6 +131,12 @@ class Ping(object):
                 break
         self.data.to_csv(path_or_buf="ping.csv", mode="a")
 
+def isnan(value):
+    """Check whether value == numpy.nan"""
+    try:
+        return np.isnan(value)
+    except TypeError:  # If its not a numpy usable value, it's certainly non an np.nan
+        return False
 
 class Combined(object):
     def __init__(self, parts):
@@ -165,29 +145,43 @@ class Combined(object):
         for part in self.parts:
             self.headers += part.headers
         self.data = pd.DataFrame(columns=self.headers)
+        self.previous_measurement = {col:np.nan for col in self.data.columns}
+
+    def format_differences(self, current, previous):
+        changes = {k:v for k,v in current.iteritems() if previous[k] != v}
+        return "\t".join(["{0}={1}".format(k, changes[k]) for k in sorted(changes.keys()) if k in PRINT_CHANGES_OF and not isnan(changes[k])])
 
     def measure(self):
         while True:
             try:
-                combined_measurement = {}
+                measurement = {}
                 for part in self.parts:
                     fields = part.measure_once()
-                    combined_measurement.update(fields)
+                    measurement.update(fields)
                 try:
                     timestamp = datetime.datetime.now()
-                    self.data.loc[timestamp] = combined_measurement
+                    self.data.loc[timestamp] = measurement
                 except ValueError, ve:
-                    print "Error ({0}) on data {1}".format(ve, combined_measurement)
+                    rospy.loginfo("Error ({0}) on data {1}".format(ve, measurement))
+
+                changes = self.format_differences(measurement, self.previous_measurement)
+                if changes:
+                    rospy.loginfo("{0}: {1}".format(timestamp, changes))
+
+                    # # If the change is not that important, we keep overwriting the output in console.
+                    # if not any([(keep in changes) for keep in KEEP_CHANGES_OF]):
+                    #     sys.stdout.write("\033[F") # Cursor up one line
+                    #     sys.stdout.write("\033[K") # Clear to the end of line
+
+                self.previous_measurement = measurement
+
                 time.sleep(0.5)
             except KeyboardInterrupt:
                 break
         self.data.to_csv(path_or_buf="ping.csv", mode="a")
 
 if __name__ == "__main__":
-    # iw = IwConfig("eth7")
-    # iw.measure()
-    # p = Ping("8.8.8.8")
-    # p.measure()
+    rospy.init_node("wireless_monitor")
 
     combined = Combined([IwConfig("eth7"), Ping("8.8.8.8")])
     combined.measure()
