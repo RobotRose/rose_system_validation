@@ -20,25 +20,26 @@ KEEP_CHANGES_OF = ["Access Point"]
 class IwConfig(object):
     def __init__(self, interface='wlan0'):
         self.interface = interface
-        self.data = pd.DataFrame(columns=[  'Power Management', 
-                                            'Fragment thr', 
-                                            'Access Point', 
-                                            'Link Quality', 
-                                            'Encryption key', 
-                                            'Signal level', 
-                                            'Tx excessive retries', 
-                                            'RTS thr', 
-                                            'Rx invalid frag', 
-                                            'Frequency', 
-                                            'Tx-Power', 
-                                            'ESSID', 
-                                            'long limit', 
-                                            'Missed beacon', 
-                                            'Bit Rate', 
-                                            'Rx invalid crypt', 
-                                            'Rx invalid nwid', 
-                                            'Invalid misc', 
-                                            'Mode'])
+        self.headers = ['Power Management', 
+                        'Fragment thr', 
+                        'Access Point', 
+                        'Link Quality', 
+                        'Encryption key', 
+                        'Signal level', 
+                        'Tx excessive retries', 
+                        'RTS thr', 
+                        'Rx invalid frag', 
+                        'Frequency', 
+                        'Tx-Power', 
+                        'ESSID', 
+                        'long limit', 
+                        'Missed beacon', 
+                        'Bit Rate', 
+                        'Rx invalid crypt', 
+                        'Rx invalid nwid', 
+                        'Invalid misc', 
+                        'Mode']
+        self.data = pd.DataFrame(columns=self.headers)
         self.previous_measurement = {col:np.nan for col in self.data.columns}
 
     def format_differences(self, current, previous):
@@ -101,6 +102,8 @@ class IwConfig(object):
         except ValueError, ve:
             print "Error ({0}) on data {1}".format(ve, raw)
 
+        return measurement
+
     def measure(self):
         while True:
             try:
@@ -114,7 +117,8 @@ class IwConfig(object):
 class Ping(object):
     def __init__(self, host):
         self.host = host
-        self.data = pd.DataFrame(columns=['time', 'ttl'])
+        self.headers = ['time', 'ttl']
+        self.data = pd.DataFrame(columns=self.headers)
         self.previous_measurement = {col:np.nan for col in self.data.columns}
 
         self.pattern = r"(?P<bytes>\w+) bytes from (?P<host>([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)): icmp_req=(?P<icmp_req>\w+) ttl=(?P<ttl>\w+) time=(?P<time>\w+)"
@@ -142,6 +146,8 @@ class Ping(object):
         except ValueError, ve:
             print "Error ({0}) on data {1}".format(ve, raw)
 
+        return measurement
+
     def measure(self):
         while True:
             try:
@@ -151,8 +157,37 @@ class Ping(object):
                 break
         self.data.to_csv(path_or_buf="ping.csv", mode="a")
 
+
+class Combined(object):
+    def __init__(self, parts):
+        self.parts = parts
+        self.headers = []
+        for part in self.parts:
+            self.headers += part.headers
+        self.data = pd.DataFrame(columns=self.headers)
+
+    def measure(self):
+        while True:
+            try:
+                combined_measurement = {}
+                for part in self.parts:
+                    fields = part.measure_once()
+                    combined_measurement.update(fields)
+                try:
+                    timestamp = datetime.datetime.now()
+                    self.data.loc[timestamp] = combined_measurement
+                except ValueError, ve:
+                    print "Error ({0}) on data {1}".format(ve, combined_measurement)
+                time.sleep(0.5)
+            except KeyboardInterrupt:
+                break
+        self.data.to_csv(path_or_buf="ping.csv", mode="a")
+
 if __name__ == "__main__":
     # iw = IwConfig("eth7")
     # iw.measure()
-    p = Ping("8.8.8.8")
-    p.measure()
+    # p = Ping("8.8.8.8")
+    # p.measure()
+
+    combined = Combined([IwConfig("eth7"), Ping("8.8.8.8")])
+    combined.measure()
