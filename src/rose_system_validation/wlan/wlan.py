@@ -146,42 +146,47 @@ class Combined(object):
             self.headers += part.headers
         self.data = pd.DataFrame(columns=self.headers)
         self.previous_measurement = {col:np.nan for col in self.data.columns}
+        self.timer = None
+
+    def start(self):
+        self.timer = rospy.Timer(rospy.Duration(0.1), self.measure_once, oneshot=False)
+
+    def stop(self):
+        self.timer.shutdown()
+        self.data.to_csv(path_or_buf="wlan.csv", mode="a")
 
     def format_differences(self, current, previous):
         changes = {k:v for k,v in current.iteritems() if previous[k] != v}
         return "\t".join(["{0}={1}".format(k, changes[k]) for k in sorted(changes.keys()) if k in PRINT_CHANGES_OF and not isnan(changes[k])])
 
-    def measure(self):
-        while True:
-            try:
-                measurement = {}
-                for part in self.parts:
-                    fields = part.measure_once()
-                    measurement.update(fields)
-                try:
-                    timestamp = datetime.datetime.now()
-                    self.data.loc[timestamp] = measurement
-                except ValueError, ve:
-                    rospy.loginfo("Error ({0}) on data {1}".format(ve, measurement))
+    def measure_once(self, *args, **kwargs):
+        measurement = {}
+        for part in self.parts:
+            fields = part.measure_once()
+            measurement.update(fields)
+        try:
+            timestamp = datetime.datetime.now()
+            self.data.loc[timestamp] = measurement
+        except ValueError, ve:
+            rospy.loginfo("Error ({0}) on data {1}".format(ve, measurement))
 
-                changes = self.format_differences(measurement, self.previous_measurement)
-                if changes:
-                    rospy.loginfo("{0}: {1}".format(timestamp, changes))
+        changes = self.format_differences(measurement, self.previous_measurement)
+        if changes:
+            rospy.loginfo("{0}: {1}".format(timestamp, changes))
 
-                    # # If the change is not that important, we keep overwriting the output in console.
-                    # if not any([(keep in changes) for keep in KEEP_CHANGES_OF]):
-                    #     sys.stdout.write("\033[F") # Cursor up one line
-                    #     sys.stdout.write("\033[K") # Clear to the end of line
+            # # If the change is not that important, we keep overwriting the output in console.
+            # if not any([(keep in changes) for keep in KEEP_CHANGES_OF]):
+            #     sys.stdout.write("\033[F") # Cursor up one line
+            #     sys.stdout.write("\033[K") # Clear to the end of line
 
-                self.previous_measurement = measurement
-
-                time.sleep(0.5)
-            except KeyboardInterrupt:
-                break
-        self.data.to_csv(path_or_buf="ping.csv", mode="a")
+        self.previous_measurement = measurement
 
 if __name__ == "__main__":
     rospy.init_node("wireless_monitor")
 
     combined = Combined([IwConfig("eth7"), Ping("8.8.8.8")])
-    combined.measure()
+    combined.start()
+
+    rospy.spin()
+
+    combined.stop()
