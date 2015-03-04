@@ -67,10 +67,12 @@ class IwConfig(object):
                 part = part.replace("=", ":").strip()
                 split = part.split(':', 1)
                 if len(split) >= 2:
-                    yield split[0], split[1]
+                    yield split[0], split[1].replace('"', '')
         
         fields = dict(parse_raw(parts))
         timestamp = datetime.datetime.now()
+
+        # print "{0} : {1}".format(timestamp, fields)
 
         self.data.loc[timestamp] = fields
 
@@ -81,7 +83,7 @@ class IwConfig(object):
                 time.sleep(0.5)
             except KeyboardInterrupt:
                 break
-        self.data.to_csv(path_or_buf="wlan.csv")
+        self.data.to_csv(path_or_buf="wlan.csv", mode="a")
 
 
 if __name__ == "__main__":
