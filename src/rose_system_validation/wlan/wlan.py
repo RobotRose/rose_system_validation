@@ -84,7 +84,7 @@ class IwConfig(object):
         # print "{0} : {1}".format(timestamp, measurement)
         changes = self.format_differences(measurement, self.previous_measurement)
         if changes:
-            print changes
+            print("{0}: {1}".format(timestamp, changes))
 
         self.previous_measurement = measurement
 
