@@ -12,6 +12,8 @@ print iwconfig("eth7")
 # print ping('8.8.8.8', c=1)
 # print traceroute('8.8.8.8')
 
+PRINT_CHANGES_OF = ["Access Point", "Link Quality"]
+
 class IwConfig(object):
     def __init__(self, interface='wlan0'):
         self.interface = interface
@@ -34,6 +36,11 @@ class IwConfig(object):
                                             'Rx invalid nwid', 
                                             'Invalid misc', 
                                             'Mode'])
+        self.previous_measurement = {col:np.nan for col in self.data.columns}
+
+    def format_differences(self, current, previous):
+        changes = {k:v for k,v in current.iteritems() if previous[k] != v}
+        return "\t".join(["{0}={1}".format(k, changes[k]) for k in sorted(changes.keys()) if k in PRINT_CHANGES_OF])
 
     def measure_once(self):
         """Raw format is something like
@@ -70,13 +77,19 @@ class IwConfig(object):
                 if len(split) >= 2:
                     yield split[0], split[1].replace('"', '')
         
-        fields = {col:np.nan for col in self.data.columns}
-        fields.update(dict(parse_raw(parts)))
+        measurement = {col:np.nan for col in self.data.columns}
+        measurement.update(dict(parse_raw(parts)))
         timestamp = datetime.datetime.now()
 
-        # print "{0} : {1}".format(timestamp, fields)
+        # print "{0} : {1}".format(timestamp, measurement)
+        changes = self.format_differences(measurement, self.previous_measurement)
+        if changes:
+            print changes
+
+        self.previous_measurement = measurement
+
         try:
-            self.data.loc[timestamp] = fields
+            self.data.loc[timestamp] = measurement
         except ValueError, ve:
             print "Error ({0}) on data {1}".format(ve, raw)
 
