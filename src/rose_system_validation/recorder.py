@@ -143,7 +143,7 @@ class OdomRecorder(Recorder):
 class TfRecorder(Recorder):
 
     """Records TF messages for later analysis"""
-    def __init__(self, listener, target_frame, source_frame, timeout=rospy.Duration(1.0)):
+    def __init__(self, listener, target_frame, source_frame, timeout=rospy.Duration(1.0), print_tf_error=True):
         headers = [ "tf.pos.x", "tf.pos.y","tf.pos.z", 
                     "tf.ori.x", "tf.ori.y", "tf.ori.z", "tf.ori.w"]
         Recorder.__init__(self, headers=headers, description="TF-{0}-{1}".format(target_frame, source_frame).replace("/",'')) # 8 columns: time, position.{x,y,z}, orientation.{x,y,z,w}
@@ -151,6 +151,7 @@ class TfRecorder(Recorder):
         self.timeout = timeout
 
         self.target_frame, self.source_frame = target_frame, source_frame
+        self.print_tf_error = print_tf_error
 
     def record_tf_at(self, time):
         if self.recording:
@@ -166,4 +167,5 @@ class TfRecorder(Recorder):
 
                 return row
             except tf.Exception, e:
-                rospy.logerr(e)
+                if self.print_tf_error:
+                    rospy.logerr(e)

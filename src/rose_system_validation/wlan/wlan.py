@@ -3,7 +3,7 @@
 """Get wireless LAN parameters"""
 import rospy
 
-from sh import iwconfig, ping, traceroute  # sh creates Python fucntions around command line utilities.
+from sh import ErrorReturnCode, iwconfig, ping, traceroute, ifconfig, sudo  # sh creates Python fucntions around command line utilities.
 import datetime
 import time
 import pandas as pd
@@ -18,8 +18,21 @@ print iwconfig("eth7")
 # print ping('8.8.8.8', c=1)
 # print traceroute('8.8.8.8')
 
-PRINT_CHANGES_OF = ["Access Point", "Link Quality", "Bit Rate", "Signal level"]
+PRINT_CHANGES_OF = ["Access Point", "Link Quality", "Bit Rate", "Signal level", "8.8.8.8_time", "10.8.0.1_time"]
 KEEP_CHANGES_OF = ["Access Point"]
+
+def isnan(value):
+    """Check whether value == numpy.nan"""
+    try:
+        return np.isnan(value)
+    except TypeError:  # If its not a numpy usable value, it's certainly non an np.nan
+        return False
+
+def format_differences(current, previous, selection):
+    changes = {k:v for k,v in current.iteritems() if previous[k] != v}
+    return "\t".join(["{0}={1}".format(k, changes[k]) for k in sorted(changes.keys()) if k in selection and not isnan(changes[k])])
+
+
 
 class IwConfig(object):
     def __init__(self, interface='wlan0'):
@@ -46,10 +59,6 @@ class IwConfig(object):
         self.data = pd.DataFrame(columns=self.headers)
         self.previous_measurement = {col:np.nan for col in self.data.columns}
 
-    def format_differences(self, current, previous):
-        changes = {k:v for k,v in current.iteritems() if previous[k] != v}
-        return "\t".join(["{0}={1}".format(k, changes[k]) for k in sorted(changes.keys()) if k in PRINT_CHANGES_OF])
-
     def measure_once(self):
         """Raw format is something like
         
@@ -72,7 +81,7 @@ class IwConfig(object):
         
         
         The fields are explained at http://linuxcommand.org/man_pages/iwconfig8.html"""
-
+        
         raw = iwconfig(self.interface)
 
         parts = raw.split("  ")
@@ -103,25 +112,30 @@ class IwConfig(object):
 class Ping(object):
     def __init__(self, host):
         self.host = host
-        self.headers = ['time', 'ttl']
+        headers = ['time', 'ttl']
+        self.headers = [self.host+"_"+col for col in headers]
         self.data = pd.DataFrame(columns=self.headers)
         self.previous_measurement = {col:np.nan for col in self.data.columns}
 
         self.pattern = r"(?P<bytes>\w+) bytes from (?P<host>([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)): icmp_req=(?P<icmp_req>\w+) ttl=(?P<ttl>\w+) time=(?P<time>\w+)"
 
     def measure_once(self):
-        output = ping(self.host, c=1)
-        raw = output.split("\n")[1]
-
         measurement = {col:np.nan for col in self.data.columns}
+        
+        try:
+            output = ping(self.host, c=1)
+            raw = output.split("\n")[1]
 
-        match = re.match(self.pattern, raw)
-        if match:
-            # measurement['bytes'] = match.group('bytes')
-            # measurement['host'] = match.group('host')
-            # measurement['icmp_req'] = match.group('icmp_req')
-            measurement['ttl'] = match.group('ttl')
-            measurement['time'] = match.group('time')
+
+            match = re.match(self.pattern, raw)
+            if match:
+                # measurement['bytes'] = match.group('bytes')
+                # measurement['host'] = match.group('host')
+                # measurement['icmp_req'] = match.group('icmp_req')
+                measurement[self.host+"_"+'ttl'] = match.group('ttl')
+                measurement[self.host+"_"+'time'] = match.group('time')
+        except ErrorReturnCode, erc:
+            rospy.logerr(erc.)
 
         return measurement
 
@@ -134,12 +148,6 @@ class Ping(object):
                 break
         self.data.to_csv(path_or_buf="ping.csv", mode="a")
 
-def isnan(value):
-    """Check whether value == numpy.nan"""
-    try:
-        return np.isnan(value)
-    except TypeError:  # If its not a numpy usable value, it's certainly non an np.nan
-        return False
 
 class Combined(object):
     def __init__(self, parts):
@@ -152,15 +160,11 @@ class Combined(object):
         self.timer = None
 
     def start(self):
-        self.timer = rospy.Timer(rospy.Duration(0.1), self.measure_once, oneshot=False)
+        self.timer = rospy.Timer(rospy.Duration(0.5), self.measure_once, oneshot=False)
 
     def stop(self):
         self.timer.shutdown()
         self.data.to_csv(path_or_buf="wlan.csv", mode="a")
-
-    def format_differences(self, current, previous):
-        changes = {k:v for k,v in current.iteritems() if previous[k] != v}
-        return "\t".join(["{0}={1}".format(k, changes[k]) for k in sorted(changes.keys()) if k in PRINT_CHANGES_OF and not isnan(changes[k])])
 
     def measure_once(self, *args, **kwargs):
         measurement = {}
@@ -173,7 +177,7 @@ class Combined(object):
         except ValueError, ve:
             rospy.loginfo("Error ({0}) on data {1}".format(ve, measurement))
 
-        changes = self.format_differences(measurement, self.previous_measurement)
+        changes = format_differences(measurement, self.previous_measurement, PRINT_CHANGES_OF)
         if changes:
             rospy.loginfo("{0}: {1}".format(timestamp, changes))
 
@@ -184,13 +188,14 @@ class Combined(object):
 
         self.previous_measurement = measurement
 
+
 class ExternallyTriggeredTfRecorder(rec.TfRecorder):
 
     """Records TF messages for later analysis"""
-    def __init__(self, listener, target_frame, source_frame, timeout=rospy.Duration(1.0)):
+    def __init__(self, listener, target_frame, source_frame, timeout=rospy.Duration(1.0), print_tf_error=False):
         self.headers = [ "tf.pos.x", "tf.pos.y","tf.pos.z", 
                     "tf.ori.x", "tf.ori.y", "tf.ori.z", "tf.ori.w"]
-        rec.TfRecorder.__init__(self, listener, target_frame, source_frame, timeout)
+        rec.TfRecorder.__init__(self, listener, target_frame, source_frame, timeout, print_tf_error)
 
     def measure_once(self, *args, **kwargs):
         self.recording = True
@@ -218,11 +223,20 @@ class ExternallyTriggeredTfRecorder(rec.TfRecorder):
             except tf.Exception, e:
                 rospy.logerr(e)
 
+
+class RosTopic(rec.Recorder):
+    def __init__(self, topic):
+        self.logger = rostopic.bw("topic", self.process_output)
+
+    def process_output(line, stdin, process):
+        pass
+
+
 if __name__ == "__main__":
     rospy.init_node("wireless_monitor")
 
     tflistener = tf.TransformListener()
-    combined = Combined([IwConfig("eth7"), Ping("8.8.8.8"), ExternallyTriggeredTfRecorder(tflistener, "/map", "/base_link")])
+    combined = Combined([IwConfig("eth7"), Ping("8.8.8.8"), Ping("10.8.0.1"), Ping("10.8.0.5"), ExternallyTriggeredTfRecorder(tflistener, "/map", "/base_link")])
     combined.start()
 
     rospy.spin()
