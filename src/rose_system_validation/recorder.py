@@ -163,5 +163,7 @@ class TfRecorder(Recorder):
                         quaternion[0], quaternion[1], quaternion[2], quaternion[3]]
 
                 self.add_row(ros_time_to_datetime(time), row)
+
+                return row
             except tf.Exception, e:
                 rospy.logerr(e)
