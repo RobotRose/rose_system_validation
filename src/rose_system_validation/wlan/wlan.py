@@ -14,7 +14,7 @@ import tf
 
 import rose_system_validation.recorder as rec
 
-print iwconfig("wlan0")
+print iwconfig()
 # print ping('8.8.8.8', c=1)
 # print traceroute('8.8.8.8')
 
@@ -35,8 +35,12 @@ def format_differences(current, previous, selection):
 
 
 class IwConfig(object):
-    def __init__(self, interface='wlan0'):
+    def __init__(self, interface=None):
         self.interface = interface
+        if not self.interface:
+            self.interface = IwConfig.find_interface()
+        rospy.loginfo("Logging wireless interface {0}".format(self.interface))
+
         self.headers = ['Power Management', 
                         'Fragment thr', 
                         'Access Point', 
@@ -58,6 +62,30 @@ class IwConfig(object):
                         'Mode']
         self.data = pd.DataFrame(columns=self.headers)
         self.previous_measurement = {col:np.nan for col in self.data.columns}
+
+    @staticmethod
+    def find_interface():
+        """Raw output of iwconfig is:
+        $ iwconfig 
+        eth6      no wireless extensions.
+
+        eth7      IEEE 802.11abg  ESSID:"ROSE_WIFI"  
+                  Mode:Managed  Frequency:5.22 GHz  Access Point: 10:C3:7B:DE:58:5C   
+                  Retry  long limit:7   RTS thr:off   Fragment thr:off
+                  Power Management:off
+                  
+        lo        no wireless extensions.
+
+        tap0      no wireless extensions.
+
+        So, we look for a line iwth ESSID: in it, then take the first word in that line
+        """
+        all_output = iwconfig()
+        for line in all_output.split('\n'):
+            if "ESSID:" in line:
+                parts = line.split(" ")
+                interface_name = parts[0]
+                return interface_name
 
     def measure_once(self):
         """Raw format is something like
@@ -237,7 +265,7 @@ if __name__ == "__main__":
     rospy.init_node("wireless_monitor")
 
     tflistener = tf.TransformListener()
-    combined = Combined([IwConfig("wlan0"), Ping("8.8.8.8"), Ping("10.8.0.1"), Ping("10.8.0.6"), ExternallyTriggeredTfRecorder(tflistener, "/map", "/base_link")])
+    combined = Combined([IwConfig(), Ping("8.8.8.8"), Ping("10.8.0.1"), Ping("10.8.0.6"), ExternallyTriggeredTfRecorder(tflistener, "/map", "/base_link")])
     combined.start()
 
     rospy.spin()
