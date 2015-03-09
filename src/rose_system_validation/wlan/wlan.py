@@ -14,7 +14,7 @@ import tf
 
 import rose_system_validation.recorder as rec
 
-print iwconfig("eth7")
+print iwconfig("wlan0")
 # print ping('8.8.8.8', c=1)
 # print traceroute('8.8.8.8')
 
@@ -96,8 +96,8 @@ class IwConfig(object):
         
         measurement = {col:np.nan for col in self.data.columns}
         measurement.update(dict(parse_raw(parts)))
-
-        return measurement
+        measurement_selected = {k:v for k, v in measurement.iteritems() if k in self.data.columns}
+        return measurement_selected
 
     def measure(self):
         while True:
@@ -135,7 +135,7 @@ class Ping(object):
                 measurement[self.host+"_"+'ttl'] = match.group('ttl')
                 measurement[self.host+"_"+'time'] = match.group('time')
         except ErrorReturnCode, erc:
-            rospy.logerr(erc.)
+            rospy.logerr(erc)
 
         return measurement
 
@@ -202,8 +202,9 @@ class ExternallyTriggeredTfRecorder(rec.TfRecorder):
         data = self.record_tf_at()
         measurements = {k:np.nan for k in self.headers}
         try:
-            measurements = dict(pair for pair in zip(self.data.columns, data))
-        except:
+            measurements = dict(pair for pair in zip(self.dataframe.columns, data))
+        except Exception, e:
+            rospy.logerr(e)
             pass #TODO: Fix exception here
         return measurements
 
@@ -236,7 +237,7 @@ if __name__ == "__main__":
     rospy.init_node("wireless_monitor")
 
     tflistener = tf.TransformListener()
-    combined = Combined([IwConfig("eth7"), Ping("8.8.8.8"), Ping("10.8.0.1"), Ping("10.8.0.5"), ExternallyTriggeredTfRecorder(tflistener, "/map", "/base_link")])
+    combined = Combined([IwConfig("wlan0"), Ping("8.8.8.8"), Ping("10.8.0.1"), Ping("10.8.0.6"), ExternallyTriggeredTfRecorder(tflistener, "/map", "/base_link")])
     combined.start()
 
     rospy.spin()
