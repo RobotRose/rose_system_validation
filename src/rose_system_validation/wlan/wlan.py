@@ -236,8 +236,10 @@ class ExternallyTriggeredTfRecorder(rec.TfRecorder):
 
     def measure_once(self, *args, **kwargs):
         self.recording = True
-        data = self.record_tf_at()
+        data = self.record_tf_at(rospy.Time.now())
         measurements = {k:np.nan for k in self.headers}
+        if not data:
+            return measurements  # All measurements are np.nan be default, so if there is no data, just return this
         try:
             measurements = dict(pair for pair in zip(self.dataframe.columns, data))
         except Exception, e:
@@ -245,21 +247,22 @@ class ExternallyTriggeredTfRecorder(rec.TfRecorder):
             pass #TODO: Fix exception here
         return measurements
 
-    def record_tf_at(self):
-        if self.recording:
-            try:
-                self.tf.waitForTransform(self.target_frame, self.source_frame, rospy.Time(0), self.timeout)
-                time = self.tf.getLatestCommonTime(self.target_frame, self.source_frame)
-                position, quaternion = self.tf.lookupTransform(self.target_frame, self.source_frame, time)  # -> position, quaternion
+    # def record_tf_at(self):
+    #     if self.recording:
+    #         try:
+    #             self.tf.waitForTransform(self.target_frame, self.source_frame, rospy.Time(0), self.timeout)
+    #             time = self.tf.getLatestCommonTime(self.target_frame, self.source_frame)
+    #             position, quaternion = self.tf.lookupTransform(self.target_frame, self.source_frame, time)  # -> position, quaternion
 
-                row = [ position[0], position[1], position[2],
-                        quaternion[0], quaternion[1], quaternion[2], quaternion[3]]
+    #             row = [ position[0], position[1], position[2],
+    #                     quaternion[0], quaternion[1], quaternion[2], quaternion[3]]
 
-                self.add_row(rec.ros_time_to_datetime(time), row)
+    #             self.add_row(rec.ros_time_to_datetime(time), row)
 
-                return row
-            except tf.Exception, e:
-                rospy.logerr(e)
+    #             return row
+    #         except tf.Exception, e:
+    #             if self.print_tf_error: 
+    #                 rospy.logerr(e)
 
 
 class RosTopic(rec.Recorder):
