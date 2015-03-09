@@ -32,7 +32,9 @@ def format_differences(current, previous, selection):
     changes = {k:v for k,v in current.iteritems() if previous[k] != v}
     return "\t".join(["{0}={1}".format(k, changes[k]) for k in sorted(changes.keys()) if k in selection and not isnan(changes[k])])
 
-
+def dump_output(*args, **kwargs):
+    print "dump_output received error"
+    pass
 
 class IwConfig(object):
     def __init__(self, interface=None):
@@ -152,8 +154,15 @@ class Ping(object):
         
         try:
             output = ping(self.host, c=1)
-            raw = output.split("\n")[1]
+            if "Destination Host Unreachable" in output:
+                # measurement['bytes'] = np.nan
+                # measurement['host'] = np.nan
+                # measurement['icmp_req'] = np.nan
+                measurement[self.host+"_"+'ttl'] = np.nan
+                measurement[self.host+"_"+'time'] = np.nan
+                return measurement
 
+            raw = output.split("\n")[1]
 
             match = re.match(self.pattern, raw)
             if match:
@@ -163,7 +172,7 @@ class Ping(object):
                 measurement[self.host+"_"+'ttl'] = match.group('ttl')
                 measurement[self.host+"_"+'time'] = match.group('time')
         except ErrorReturnCode, erc:
-            rospy.logerr(erc)
+            pass #rospy.logerr(erc)
 
         return measurement
 
