@@ -260,7 +260,9 @@ if __name__ == "__main__":
     rospy.init_node("wireless_monitor")
 
     tflistener = tf.TransformListener()
-    combined = Combined([IwConfig(), Ping("8.8.8.8"), Ping("10.8.0.1"), Ping("10.8.0.6"), ExternallyTriggeredTfRecorder(tflistener, "/map", "/base_link")])
+    hosts = ["8.8.8.8", "10.8.0.1", "10.8.0.6"]
+    pings = [Ping(host) for host in hosts]
+    combined = Combined([IwConfig(), ExternallyTriggeredTfRecorder(tflistener, "/map", "/base_link")] + pings)
     combined.start()
 
     rospy.spin()
