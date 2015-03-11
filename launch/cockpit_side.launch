@@ -1,0 +1,5 @@
+<launch>
+    <node name="wlan_monitor" pkg="rose_system_validation" type="wlan.py" output="screen"/>
+    <node name="wlan_monitor" pkg="rose_system_validation" type="rostopic.py" output="screen" args="/camera/rgb/image_color/theora"/>
+</launch>
+
