@@ -63,13 +63,12 @@ average rate: 19.556
 average rate: 19.535
     min: 0.000s max: 0.159s std dev: 0.04852s window: 50"""
         line = line.strip()
-        # print line
+        
         if line.startswith("average"):
             self.current_measurement = line
         if line.startswith("min"): 
             self.current_measurement += " " + line
 
-            print self.current_measurement
             measurement = {col:np.nan for col in self.dataframe.columns}
             match = re.match(self.pattern, self.current_measurement)
             if match:
