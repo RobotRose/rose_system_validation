@@ -83,7 +83,7 @@ average rate: 19.535
 if __name__ == "__main__":
     rospy.init_node("rostopic_monitor")
 
-    topics = ["/camera/rgb/image_color/theora", "/odom"]
+    topics = sys.argv[1:]
     topics = [RosTopic(host) for host in topics]
     for topicmon in topics:
         topicmon.start()
