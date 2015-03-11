@@ -200,18 +200,9 @@ class Combined(object):
             fields = part.measure_once()
             measurement.update(fields)
         try:
-            timestamp = datetime.datetime.now()
+            timestamp = datetime.now()
             self.data.loc[timestamp] = measurement
         except ValueError, ve:
             rospy.loginfo("Error ({0}) on data {1}".format(ve, measurement))
-
-        changes = format_differences(measurement, self.previous_measurement, PRINT_CHANGES_OF)
-        if changes:
-            rospy.loginfo("{0}: {1}".format(timestamp, changes))
-
-            # # If the change is not that important, we keep overwriting the output in console.
-            # if not any([(keep in changes) for keep in KEEP_CHANGES_OF]):
-            #     sys.stdout.write("\033[F") # Cursor up one line
-            #     sys.stdout.write("\033[K") # Clear to the end of line
 
         self.previous_measurement = measurement

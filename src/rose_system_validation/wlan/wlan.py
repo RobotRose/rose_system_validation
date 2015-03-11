@@ -214,7 +214,8 @@ if __name__ == "__main__":
     tflistener = tf.TransformListener()
     hosts = ["8.8.8.8", "10.8.0.1", "10.8.0.6"]
     pings = [Ping(host) for host in hosts]
-    combined = Combined([IwConfig(), ExternallyTriggeredTfRecorder(tflistener, "/map", "/base_link")] + pings)
+
+    combined = rec.Combined([IwConfig(), ExternallyTriggeredTfRecorder(tflistener, "/map", "/base_link")] + pings, "wlan.csv")
     combined.start()
 
     rospy.spin()
