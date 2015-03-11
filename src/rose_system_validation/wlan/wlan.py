@@ -186,46 +186,6 @@ class Ping(object):
         self.data.to_csv(path_or_buf="ping.csv", mode="a")
 
 
-class Combined(object):
-    def __init__(self, parts):
-        self.parts = parts
-        self.headers = []
-        for part in self.parts:
-            self.headers += part.headers
-        self.data = pd.DataFrame(columns=self.headers)
-        self.previous_measurement = {col:np.nan for col in self.data.columns}
-        self.timer = None
-
-    def start(self):
-        self.timer = rospy.Timer(rospy.Duration(0.5), self.measure_once, oneshot=False)
-
-    def stop(self):
-        self.timer.shutdown()
-        self.data.to_csv(path_or_buf="wlan.csv", mode="a")
-
-    def measure_once(self, *args, **kwargs):
-        measurement = {}
-        for part in self.parts:
-            fields = part.measure_once()
-            measurement.update(fields)
-        try:
-            timestamp = datetime.datetime.now()
-            self.data.loc[timestamp] = measurement
-        except ValueError, ve:
-            rospy.loginfo("Error ({0}) on data {1}".format(ve, measurement))
-
-        changes = format_differences(measurement, self.previous_measurement, PRINT_CHANGES_OF)
-        if changes:
-            rospy.loginfo("{0}: {1}".format(timestamp, changes))
-
-            # # If the change is not that important, we keep overwriting the output in console.
-            # if not any([(keep in changes) for keep in KEEP_CHANGES_OF]):
-            #     sys.stdout.write("\033[F") # Cursor up one line
-            #     sys.stdout.write("\033[K") # Clear to the end of line
-
-        self.previous_measurement = measurement
-
-
 class ExternallyTriggeredTfRecorder(rec.TfRecorder):
 
     """Records TF messages for later analysis"""
@@ -246,14 +206,6 @@ class ExternallyTriggeredTfRecorder(rec.TfRecorder):
             rospy.logerr(e)
             pass #TODO: Fix exception here
         return measurements
-
-
-class RosTopic(rec.Recorder):
-    def __init__(self, topic):
-        self.logger = rostopic.bw("topic", self.process_output)
-
-    def process_output(line, stdin, process):
-        pass
 
 
 if __name__ == "__main__":

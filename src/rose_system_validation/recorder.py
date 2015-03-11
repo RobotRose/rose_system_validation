@@ -40,11 +40,16 @@ class Recorder(object):
 
         self.recording = autostart
 
-    def add_row(self, index, row):
+    def add_row(self, index=None, row=None):
         """Add a row to the datastore at a given index
         @param index may be a timestamp
         @param row a list of data. Must correspond with the headers passed at construction
         """
+        if not index:
+            index = datetime.now()
+        if not row:
+            {col:np.nan for col in self.dataframe.columns}
+
         self.dataframe.loc[index] = row
 
     def start(self):
@@ -53,8 +58,8 @@ class Recorder(object):
     def stop(self):
         self.recording = False
 
-    def save(self, filepath):
-        self.dataframe.to_csv(path_or_buf=filepath)
+    def save(self, filepath, append=True):
+        self.dataframe.to_csv(path_or_buf=filepath, mode="a" if append else "w")
 
 
 class OdomRecorder(Recorder):
@@ -169,3 +174,44 @@ class TfRecorder(Recorder):
             except tf.Exception, e:
                 if self.print_tf_error:
                     rospy.logerr(e)
+
+
+class Combined(object):
+    def __init__(self, parts, csvpath):
+        self.parts = parts
+        self.csvpath = csvpath
+        self.headers = []
+        for part in self.parts:
+            self.headers += part.headers
+        self.data = pd.DataFrame(columns=self.headers)
+        self.previous_measurement = {col:np.nan for col in self.data.columns}
+        self.timer = None
+
+    def start(self):
+        self.timer = rospy.Timer(rospy.Duration(0.5), self.measure_once, oneshot=False)
+
+    def stop(self):
+        self.timer.shutdown()
+        self.data.to_csv(path_or_buf=self.csvpath, mode="a")
+
+    def measure_once(self, *args, **kwargs):
+        measurement = {}
+        for part in self.parts:
+            fields = part.measure_once()
+            measurement.update(fields)
+        try:
+            timestamp = datetime.datetime.now()
+            self.data.loc[timestamp] = measurement
+        except ValueError, ve:
+            rospy.loginfo("Error ({0}) on data {1}".format(ve, measurement))
+
+        changes = format_differences(measurement, self.previous_measurement, PRINT_CHANGES_OF)
+        if changes:
+            rospy.loginfo("{0}: {1}".format(timestamp, changes))
+
+            # # If the change is not that important, we keep overwriting the output in console.
+            # if not any([(keep in changes) for keep in KEEP_CHANGES_OF]):
+            #     sys.stdout.write("\033[F") # Cursor up one line
+            #     sys.stdout.write("\033[K") # Clear to the end of line
+
+        self.previous_measurement = measurement
