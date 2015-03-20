@@ -5,6 +5,7 @@ import rospy
 
 from sh import ErrorReturnCode, ifstat  # sh creates Python functions around command line utilities.
 import datetime
+from dateutil import parser
 import time
 import pandas as pd
 import numpy as np
@@ -19,7 +20,7 @@ class Ifstat(rec.Recorder):
     def __init__(self, interface):
         self.interface = interface
         self.headers = ["KB/s in",  "KB/s out"]
-        rec.Recorder.__init__(self, "Throughput for {0}".format(interface), self.headers)
+        rec.Recorder.__init__(self, "Throughput_of_{0}".format(interface), self.headers)
 
         self.logger = None
         self.current_measurement = {}
@@ -48,9 +49,14 @@ HH:MM:SS   KB/s in  KB/s out
 14:43:25     96.18     25.88
 ...
 """
-        line = line.strip()
-        
-        print line
+        if not "Time" in line and not "HH:MM:SS" in line:
+            line = line.strip()
+            parts = [part.strip() for part in line.split(" ") if part]
+            timestr, _in, out = parts
+            timestamp = parser.parse(timestr)
+            measurement = {"KB/s in":_in,  "KB/s out":out}
+            print timestamp, measurement
+            self.add_row(timestamp, measurement)
 
 if __name__ == "__main__":
     rospy.init_node("ifstat_monitor")
