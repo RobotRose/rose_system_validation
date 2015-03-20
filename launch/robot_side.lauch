@@ -1,5 +1,6 @@
 <launch>
     <node name="wlan_monitor_robot" pkg="rose_system_validation" type="wlan.py" output="screen"/>
     <node name="rostopic_monitor_robot" pkg="rose_system_validation" type="rostopic.py" output="screen" args="/manual_cmd_vel /arms/goal"/>
+    <node name="throughput_monitor_robot" pkg="rose_system_validation" type="throughput.py" output="screen"/>
 </launch>
 

@@ -61,7 +61,8 @@ HH:MM:SS   KB/s in  KB/s out
 if __name__ == "__main__":
     rospy.init_node("ifstat_monitor")
 
-    interface = sys.argv[1]
+    from wlan import IwConfig
+    interface = IwConfig.find_interface()
     logger = Ifstat(interface)
     logger.start()
 
