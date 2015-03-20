@@ -30,7 +30,7 @@ def dump_output(*args, **kwargs):
     pass
 
 
-class RosTopic(rec.Recorder):
+class RosTopicHz(rec.Recorder):
     def __init__(self, topic, static_window=10):
         self.topic = topic
         self.headers = ["rate", "min", "max", "stddev", "window"]
@@ -44,11 +44,11 @@ class RosTopic(rec.Recorder):
         self.commands = Queue.Queue()
 
     def start(self):
-        super(RosTopic, self).start()
+        super(RosTopicHz, self).start()
         self.logger = rostopic.hz(self.topic, w=self.static_window, _out=self.process_output, _err=self.process_output, _bg=True, _in=self.commands)
 
     def stop(self):
-        super(RosTopic, self).stop()
+        super(RosTopicHz, self).stop()
         self.logger = None
         self.commands.put('^C') #Send a crtl-C when stopping
         # raise NotImplementedError("sh commands are hard to kill")
@@ -56,11 +56,11 @@ class RosTopic(rec.Recorder):
     def process_output(self, line, stdin, process):
         """Output is:
         subscribed to [/odom]
-average rate: 20.129
+    average rate: 20.129
     min: 0.003s max: 0.143s std dev: 0.04838s window: 11
-average rate: 19.556
+    average rate: 19.556
     min: 0.000s max: 0.146s std dev: 0.04833s window: 30
-average rate: 19.535
+    average rate: 19.535
     min: 0.000s max: 0.159s std dev: 0.04852s window: 50"""
         line = line.strip()
         
@@ -79,19 +79,54 @@ average rate: 19.535
                 measurement['window'] = match.group('window')
                 self.add_row(datetime.datetime.now(), measurement)
 
+
+class RostopicPubsSubs(rec.Recorder):
+    def __init__(self, topics):
+        self.topics = topics
+        self.headers = [topic.replace("/", "-") for topic in topics]
+        rec.Recorder.__init__(self, headers=self.headers, description="rostopic_subscribers")
+
+    def measure_once(self):
+        """Log how many subscribers there are for the given topics"""
+        
+        measurement = {t:np.nan for t in self.dataframe.columns}
+
+        raw = rostopic.list(v=True)
+
+        lines = raw.split("\n")
+        interesting_lines = [line for line in lines if any(topic in line for topic in self.topics)]
+        interesting_subscribers = [line for line in interesting_lines if "subscriber" in line]
+        for line in interesting_subscribers:
+            #Each line is u' * /manual_cmd_vel [geometry_msgs/Twist] 1 subscriber'
+            parts = line.strip().split(" ")
+            topic = parts[1].replace("/", "-")
+            _type = parts[2]
+            subscribercount = parts[3]
+
+            measurement[topic] = subscribercount
+        
+        self.add_row(datetime.datetime.now(), measurement)
+
+        
+
 if __name__ == "__main__":
     rospy.init_node("rostopic_monitor")
 
     topics = sys.argv[1:]
-    topics = [RosTopic(host) for host in topics]
-    for topicmon in topics:
+    topicsmons = [RosTopicHz(host) for host in topics]
+    pubsub = RostopicPubsSubs(topics)
+    for topicmon in topicsmons:
         topicmon.start()
 
     try:
+        pubsub.measure_once()
         rospy.spin()
     except OSError:
         pass
 
-    for topicmon in topics:
+    pubsub.save(pubsub.description+".csv", append=True)
+    pubsub.stop()
+
+    for topicmon in topicsmons:
         topicmon.save(topicmon.description+".csv", append=True)
         topicmon.stop()
