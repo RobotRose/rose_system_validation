@@ -89,7 +89,7 @@ class IwConfig(object):
                 interface_name = parts[0]
                 return interface_name
 
-    def measure_once(self):
+    def trigger(self):
         """Raw format is something like
         
         eth7      IEEE 802.11abg  ESSID:"ROSE_WIFI"  
@@ -132,7 +132,7 @@ class IwConfig(object):
     def measure(self):
         while True:
             try:
-                self.measure_once()
+                self.trigger()
                 time.sleep(0.5)
             except KeyboardInterrupt:
                 break
@@ -149,7 +149,7 @@ class Ping(object):
 
         self.pattern = r"(?P<bytes>\w+) bytes from (?P<host>([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)): icmp_req=(?P<icmp_req>\w+) ttl=(?P<ttl>\w+) time=(?P<time>\w+)"
 
-    def measure_once(self):
+    def trigger(self):
         measurement = {col:np.nan for col in self.data.columns}
         
         try:
@@ -179,7 +179,7 @@ class Ping(object):
     def measure(self):
         while True:
             try:
-                self.measure_once()
+                self.trigger()
                 time.sleep(0.5)
             except KeyboardInterrupt:
                 break
@@ -194,9 +194,9 @@ class ExternallyTriggeredTfRecorder(rec.TfRecorder):
                     "tf.ori.x", "tf.ori.y", "tf.ori.z", "tf.ori.w"]
         rec.TfRecorder.__init__(self, listener, target_frame, source_frame, timeout, print_tf_error)
 
-    def measure_once(self, *args, **kwargs):
+    def trigger(self, *args, **kwargs):
         self.recording = True
-        data = self.record_tf_at(rospy.Time.now())
+        data =  super(ExternallyTriggeredTfRecorder, self).trigger(rospy.Time.now())
         measurements = {k:np.nan for k in self.headers}
         if not data:
             return measurements  # All measurements are np.nan be default, so if there is no data, just return this

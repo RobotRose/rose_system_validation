@@ -30,7 +30,7 @@ def dump_output(*args, **kwargs):
     pass
 
 
-class RosTopicHz(rec.Recorder):
+class RosTopicHz(rec.InternallyTriggeredRecorder):
     def __init__(self, topic, static_window=10):
         self.topic = topic
         self.headers = ["rate", "min", "max", "stddev", "window"]
@@ -80,13 +80,13 @@ class RosTopicHz(rec.Recorder):
                 self.add_row(datetime.datetime.now(), measurement)
 
 
-class RostopicPubsSubs(rec.Recorder):
+class RostopicPubsSubs(rec.ExternallyTriggeredRecorder):
     def __init__(self, topics):
         self.topics = topics
         self.headers = [topic.replace("/", "-") for topic in topics]
         rec.Recorder.__init__(self, headers=self.headers, description="rostopic_subscribers")
 
-    def measure_once(self):
+    def trigger(self, time):
         """Log how many subscribers there are for the given topics"""
         
         measurement = {t:np.nan for t in self.dataframe.columns}
@@ -106,27 +106,24 @@ class RostopicPubsSubs(rec.Recorder):
             measurement[topic] = subscribercount
         
         self.add_row(datetime.datetime.now(), measurement)
-
         
 
 if __name__ == "__main__":
     rospy.init_node("rostopic_monitor")
 
     topics = sys.argv[1:]
-    topicsmons = [RosTopicHz(host) for host in topics]
-    pubsub = RostopicPubsSubs(topics)
-    for topicmon in topicsmons:
-        topicmon.start()
+    topicmons = [RosTopicHz(host) for host in topics]
+    pubsub = rec.LoopTrigger(RostopicPubsSubs(topics), 1.0)
+
+    recorders = topicmons + [pubsub]
+    for recorder in recorders:
+        recorder.start()
 
     try:
-        pubsub.measure_once()
         rospy.spin()
     except OSError:
         pass
 
-    pubsub.save(pubsub.description+".csv", append=True)
-    pubsub.stop()
-
-    for topicmon in topicsmons:
-        topicmon.save(topicmon.description+".csv", append=True)
-        topicmon.stop()
+    for recorder in recorders:
+        recorder.save(recorder.description+".csv", append=True)
+        recorder.stop()

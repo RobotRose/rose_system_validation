@@ -52,17 +52,31 @@ class Recorder(object):
 
         self.dataframe.loc[index] = row
 
+    def save(self, filepath, append=True):
+        self.dataframe.to_csv(path_or_buf=filepath, mode="a" if append else "w")
+
+
+class InternallyTriggeredRecorder(Recorder):
+    def __init__(self, description, headers=None, autostart=False):
+        Recorder.__init__(self, description, headers)
+        self.autostart = autostart
+
     def start(self):
         self.recording = True
 
     def stop(self):
         self.recording = False
 
-    def save(self, filepath, append=True):
-        self.dataframe.to_csv(path_or_buf=filepath, mode="a" if append else "w")
+
+class ExternallyTriggeredRecorder(Recorder):
+    def __init__(self, description, headers=None):
+        Recorder.__init__(self, description, headers)
+
+    def trigger(self, time):
+        raise NotImplementedError("Implement this method in subclasses")
 
 
-class OdomRecorder(Recorder):
+class OdomRecorder(InternallyTriggeredRecorder):
     
     """Records odometry messages for later analysis.
     An nav_msgs/Odometry message look like this:
@@ -102,7 +116,7 @@ class OdomRecorder(Recorder):
                     "pose.ori.x", "pose.ori.y", "pose.ori.z", "pose.ori.w", 
                     "twist.lin.x", "twist.lin.y","twist.lin.z", 
                     "twist.ang.x", "twist.ang.y", "twist.ang.z"]
-        Recorder.__init__(self, description="odometry", headers=headers) #We want to save 14 datafields of each Odom-message
+        InternallyTriggeredRecorder.__init__(self, description="odometry", headers=headers) #We want to save 14 datafields of each Odom-message
         
         self.odom_subscriber = rospy.Subscriber(
             "/odom", Odometry, self.process_odometry_msg)
@@ -145,36 +159,52 @@ class OdomRecorder(Recorder):
             listener(odom.header.stamp)
 
 
-class TfRecorder(Recorder):
+class TfRecorder(ExternallyTriggeredRecorder):
 
     """Records TF messages for later analysis"""
     def __init__(self, listener, target_frame, source_frame, timeout=rospy.Duration(1.0), print_tf_error=True):
         headers = [ "tf.pos.x", "tf.pos.y","tf.pos.z", 
                     "tf.ori.x", "tf.ori.y", "tf.ori.z", "tf.ori.w"]
-        Recorder.__init__(self, headers=headers, description="TF-{0}-{1}".format(target_frame, source_frame).replace("/",'')) # 8 columns: time, position.{x,y,z}, orientation.{x,y,z,w}
+        ExternallyTriggeredRecorder.__init__(self, headers=headers, description="TF-{0}-{1}".format(target_frame, source_frame).replace("/",'')) # 8 columns: time, position.{x,y,z}, orientation.{x,y,z,w}
         self.tf = listener
         self.timeout = timeout
 
         self.target_frame, self.source_frame = target_frame, source_frame
         self.print_tf_error = print_tf_error
 
-    def record_tf_at(self, time):
-        if self.recording:
-            try:
-                self.tf.waitForTransform(self.target_frame, self.source_frame, rospy.Time(0), self.timeout)
-                time = self.tf.getLatestCommonTime(self.target_frame, self.source_frame)
-                position, quaternion = self.tf.lookupTransform(self.target_frame, self.source_frame, time)  # -> position, quaternion
+    def trigger(self, time):
+        try:
+            self.tf.waitForTransform(self.target_frame, self.source_frame, rospy.Time(0), self.timeout)
+            time = self.tf.getLatestCommonTime(self.target_frame, self.source_frame)
+            position, quaternion = self.tf.lookupTransform(self.target_frame, self.source_frame, time)  # -> position, quaternion
 
-                row = [ position[0], position[1], position[2],
-                        quaternion[0], quaternion[1], quaternion[2], quaternion[3]]
+            row = [ position[0], position[1], position[2],
+                    quaternion[0], quaternion[1], quaternion[2], quaternion[3]]
 
-                self.add_row(ros_time_to_datetime(time), row)
+            self.add_row(ros_time_to_datetime(time), row)
 
-                return row
-            except tf.Exception, e:
-                if self.print_tf_error:
-                    rospy.logerr(e)
+            return row
+        except tf.Exception, e:
+            if self.print_tf_error:
+                rospy.logerr(e)
 
+
+class LoopTrigger(object):
+    def __init__(self, recorder, interval):
+        self.recorder = recorder
+        self.interval = interval
+        self.trigger = None
+
+    def start(self):
+        self.timer = rospy.Timer(rospy.Duration(self.interval), self.recorder.trigger, oneshot=False)
+
+    def stop(self):
+        self.timer.shutdown()
+
+    def save(self, *args, **kwargs):
+        self.recorder.save(*args, **kwargs)
+
+    description = property(lambda self: self.recorder.description)
 
 class Combined(object):
     def __init__(self, parts, csvpath):
@@ -188,16 +218,16 @@ class Combined(object):
         self.timer = None
 
     def start(self):
-        self.timer = rospy.Timer(rospy.Duration(0.5), self.measure_once, oneshot=False)
+        self.timer = rospy.Timer(rospy.Duration(0.5), self.trigger, oneshot=False)
 
     def stop(self):
         self.timer.shutdown()
         self.data.to_csv(path_or_buf=self.csvpath, mode="a")
 
-    def measure_once(self, *args, **kwargs):
+    def trigger(self, *args, **kwargs):
         measurement = {}
         for part in self.parts:
-            fields = part.measure_once()
+            fields = part.trigger()
             measurement.update(fields)
         try:
             timestamp = datetime.now()
@@ -205,4 +235,4 @@ class Combined(object):
         except ValueError, ve:
             rospy.loginfo("Error ({0}) on data {1}".format(ve, measurement))
 
-        self.previous_measurement = measurement
+        self.previous_measurement = measurement 
