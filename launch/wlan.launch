@@ -1,4 +1,0 @@
-<launch>
-    <node name="wlan_monitor" pkg="rose_system_validation" type="wlan.py" output="screen"/>
-</launch>
-
