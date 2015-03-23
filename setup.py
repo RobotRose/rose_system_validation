@@ -7,7 +7,7 @@ d = generate_distutils_setup(
     packages=['rose_system_validation'],
     # scripts=['wlan/wlan.py'],
     package_dir={'': 'src'},
-    install_requires=['sh']
+    install_requires=['sh', 'docopt', 'matplotlib', 'pandas', 'termcolor']
 )
 
 setup(**d)

@@ -1,0 +1,4 @@
+rose_system_validation:
+  ubuntu:
+    apt:
+      packages: [ ifstat]
