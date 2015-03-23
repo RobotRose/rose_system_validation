@@ -111,7 +111,7 @@ class RostopicPubsSubs(rec.ExternallyTriggeredRecorder):
 if __name__ == "__main__":
     rospy.init_node("rostopic_monitor")
 
-    topics = sys.argv[1:]
+    topics = [arg for arg in sys.argv[1:] if not arg.startswith("__")]
     topicmons = [RosTopicHz(host) for host in topics]
     pubsub = rec.LoopTrigger(RostopicPubsSubs(topics), 1.0)
 
@@ -125,5 +125,6 @@ if __name__ == "__main__":
         pass
 
     for recorder in recorders:
+        print "Saving {0}".format(recorder.description+".csv")
         recorder.save(recorder.description+".csv", append=True)
         recorder.stop()
