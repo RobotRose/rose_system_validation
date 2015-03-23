@@ -14,7 +14,7 @@ import tf
 
 import rose_system_validation.recorder as rec
 
-print iwconfig()
+# iwconfig()
 # print ping('8.8.8.8', c=1)
 # print traceroute('8.8.8.8')
 
@@ -210,6 +210,8 @@ class ExternallyTriggeredTfRecorder(rec.TfRecorder):
 
 if __name__ == "__main__":
     rospy.init_node("wireless_monitor")
+
+    print iwconfig()
 
     tflistener = tf.TransformListener()
     hosts = ["8.8.8.8", "10.8.0.1", "10.8.0.6"]
