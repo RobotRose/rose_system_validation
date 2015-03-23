@@ -9,6 +9,8 @@ find_package(catkin REQUIRED COMPONENTS
   dynamixel_msgs
 )
 
+catkin_python_setup()
+
 catkin_package(
   CATKIN_DEPENDS geometry_msgs rospy std_msgs sensor_msgs dynamixel_msgs
 )
