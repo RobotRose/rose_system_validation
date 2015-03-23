@@ -1,0 +1,5 @@
+<launch>
+    <node name="$(anon wlan_monitor_cockpit)" pkg="rose_system_validation" type="wlan.py" output="screen"/>
+    <node name="$(anon rostopic_monitor_cockpit)" pkg="rose_system_validation" type="rostopic.py" output="screen" args="/camera/rgb/image_color/theora"/>
+</launch>
+

@@ -14,7 +14,7 @@ import tf
 
 import rose_system_validation.recorder as rec
 
-print iwconfig("wlan0")
+# iwconfig()
 # print ping('8.8.8.8', c=1)
 # print traceroute('8.8.8.8')
 
@@ -32,11 +32,17 @@ def format_differences(current, previous, selection):
     changes = {k:v for k,v in current.iteritems() if previous[k] != v}
     return "\t".join(["{0}={1}".format(k, changes[k]) for k in sorted(changes.keys()) if k in selection and not isnan(changes[k])])
 
-
+def dump_output(*args, **kwargs):
+    print "dump_output received error"
+    pass
 
 class IwConfig(object):
-    def __init__(self, interface='wlan0'):
+    def __init__(self, interface=None):
         self.interface = interface
+        if not self.interface:
+            self.interface = IwConfig.find_interface()
+        rospy.loginfo("Logging wireless interface {0}".format(self.interface))
+
         self.headers = ['Power Management', 
                         'Fragment thr', 
                         'Access Point', 
@@ -59,7 +65,31 @@ class IwConfig(object):
         self.data = pd.DataFrame(columns=self.headers)
         self.previous_measurement = {col:np.nan for col in self.data.columns}
 
-    def measure_once(self):
+    @staticmethod
+    def find_interface():
+        """Raw output of iwconfig is:
+        $ iwconfig 
+        eth6      no wireless extensions.
+
+        eth7      IEEE 802.11abg  ESSID:"ROSE_WIFI"  
+                  Mode:Managed  Frequency:5.22 GHz  Access Point: 10:C3:7B:DE:58:5C   
+                  Retry  long limit:7   RTS thr:off   Fragment thr:off
+                  Power Management:off
+                  
+        lo        no wireless extensions.
+
+        tap0      no wireless extensions.
+
+        So, we look for a line iwth ESSID: in it, then take the first word in that line
+        """
+        all_output = iwconfig()
+        for line in all_output.split('\n'):
+            if "ESSID:" in line:
+                parts = line.split(" ")
+                interface_name = parts[0]
+                return interface_name
+
+    def trigger(self):
         """Raw format is something like
         
         eth7      IEEE 802.11abg  ESSID:"ROSE_WIFI"  
@@ -102,7 +132,7 @@ class IwConfig(object):
     def measure(self):
         while True:
             try:
-                self.measure_once()
+                self.trigger()
                 time.sleep(0.5)
             except KeyboardInterrupt:
                 break
@@ -119,13 +149,20 @@ class Ping(object):
 
         self.pattern = r"(?P<bytes>\w+) bytes from (?P<host>([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)): icmp_req=(?P<icmp_req>\w+) ttl=(?P<ttl>\w+) time=(?P<time>\w+)"
 
-    def measure_once(self):
+    def trigger(self):
         measurement = {col:np.nan for col in self.data.columns}
         
         try:
             output = ping(self.host, c=1)
-            raw = output.split("\n")[1]
+            if "Destination Host Unreachable" in output:
+                # measurement['bytes'] = np.nan
+                # measurement['host'] = np.nan
+                # measurement['icmp_req'] = np.nan
+                measurement[self.host+"_"+'ttl'] = np.nan
+                measurement[self.host+"_"+'time'] = np.nan
+                return measurement
 
+            raw = output.split("\n")[1]
 
             match = re.match(self.pattern, raw)
             if match:
@@ -135,58 +172,18 @@ class Ping(object):
                 measurement[self.host+"_"+'ttl'] = match.group('ttl')
                 measurement[self.host+"_"+'time'] = match.group('time')
         except ErrorReturnCode, erc:
-            rospy.logerr(erc)
+            pass #rospy.logerr(erc)
 
         return measurement
 
     def measure(self):
         while True:
             try:
-                self.measure_once()
+                self.trigger()
                 time.sleep(0.5)
             except KeyboardInterrupt:
                 break
         self.data.to_csv(path_or_buf="ping.csv", mode="a")
-
-
-class Combined(object):
-    def __init__(self, parts):
-        self.parts = parts
-        self.headers = []
-        for part in self.parts:
-            self.headers += part.headers
-        self.data = pd.DataFrame(columns=self.headers)
-        self.previous_measurement = {col:np.nan for col in self.data.columns}
-        self.timer = None
-
-    def start(self):
-        self.timer = rospy.Timer(rospy.Duration(0.5), self.measure_once, oneshot=False)
-
-    def stop(self):
-        self.timer.shutdown()
-        self.data.to_csv(path_or_buf="wlan.csv", mode="a")
-
-    def measure_once(self, *args, **kwargs):
-        measurement = {}
-        for part in self.parts:
-            fields = part.measure_once()
-            measurement.update(fields)
-        try:
-            timestamp = datetime.datetime.now()
-            self.data.loc[timestamp] = measurement
-        except ValueError, ve:
-            rospy.loginfo("Error ({0}) on data {1}".format(ve, measurement))
-
-        changes = format_differences(measurement, self.previous_measurement, PRINT_CHANGES_OF)
-        if changes:
-            rospy.loginfo("{0}: {1}".format(timestamp, changes))
-
-            # # If the change is not that important, we keep overwriting the output in console.
-            # if not any([(keep in changes) for keep in KEEP_CHANGES_OF]):
-            #     sys.stdout.write("\033[F") # Cursor up one line
-            #     sys.stdout.write("\033[K") # Clear to the end of line
-
-        self.previous_measurement = measurement
 
 
 class ExternallyTriggeredTfRecorder(rec.TfRecorder):
@@ -197,10 +194,12 @@ class ExternallyTriggeredTfRecorder(rec.TfRecorder):
                     "tf.ori.x", "tf.ori.y", "tf.ori.z", "tf.ori.w"]
         rec.TfRecorder.__init__(self, listener, target_frame, source_frame, timeout, print_tf_error)
 
-    def measure_once(self, *args, **kwargs):
+    def trigger(self, *args, **kwargs):
         self.recording = True
-        data = self.record_tf_at()
+        data =  super(ExternallyTriggeredTfRecorder, self).trigger(rospy.Time.now())
         measurements = {k:np.nan for k in self.headers}
+        if not data:
+            return measurements  # All measurements are np.nan be default, so if there is no data, just return this
         try:
             measurements = dict(pair for pair in zip(self.dataframe.columns, data))
         except Exception, e:
@@ -208,36 +207,17 @@ class ExternallyTriggeredTfRecorder(rec.TfRecorder):
             pass #TODO: Fix exception here
         return measurements
 
-    def record_tf_at(self):
-        if self.recording:
-            try:
-                self.tf.waitForTransform(self.target_frame, self.source_frame, rospy.Time(0), self.timeout)
-                time = self.tf.getLatestCommonTime(self.target_frame, self.source_frame)
-                position, quaternion = self.tf.lookupTransform(self.target_frame, self.source_frame, time)  # -> position, quaternion
-
-                row = [ position[0], position[1], position[2],
-                        quaternion[0], quaternion[1], quaternion[2], quaternion[3]]
-
-                self.add_row(rec.ros_time_to_datetime(time), row)
-
-                return row
-            except tf.Exception, e:
-                rospy.logerr(e)
-
-
-class RosTopic(rec.Recorder):
-    def __init__(self, topic):
-        self.logger = rostopic.bw("topic", self.process_output)
-
-    def process_output(line, stdin, process):
-        pass
-
 
 if __name__ == "__main__":
     rospy.init_node("wireless_monitor")
 
+    print iwconfig()
+
     tflistener = tf.TransformListener()
-    combined = Combined([IwConfig("wlan0"), Ping("8.8.8.8"), Ping("10.8.0.1"), Ping("10.8.0.6"), ExternallyTriggeredTfRecorder(tflistener, "/map", "/base_link")])
+    hosts = ["8.8.8.8", "10.8.0.1", "10.8.0.6"]
+    pings = [Ping(host) for host in hosts]
+
+    combined = rec.Combined([IwConfig(), ExternallyTriggeredTfRecorder(tflistener, "/map", "/base_link")] + pings, "wlan.csv")
     combined.start()
 
     rospy.spin()
