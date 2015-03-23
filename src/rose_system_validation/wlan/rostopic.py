@@ -34,7 +34,7 @@ class RosTopicHz(rec.InternallyTriggeredRecorder):
     def __init__(self, topic, static_window=10):
         self.topic = topic
         self.headers = ["rate", "min", "max", "stddev", "window"]
-        rec.Recorder.__init__(self, headers=self.headers, description="hz_of_{0}".format(topic).replace('/','-'))
+        rec.InternallyTriggeredRecorder.__init__(self, headers=self.headers, description="hz_of_{0}".format(topic).replace('/','-'))
         self.logger = None
         self.static_window = static_window
 
@@ -84,7 +84,7 @@ class RostopicPubsSubs(rec.ExternallyTriggeredRecorder):
     def __init__(self, topics):
         self.topics = topics
         self.headers = [topic.replace("/", "-") for topic in topics]
-        rec.Recorder.__init__(self, headers=self.headers, description="rostopic_subscribers")
+        rec.ExternallyTriggeredRecorder.__init__(self, headers=self.headers, description="rostopic_subscribers")
 
     def trigger(self, time):
         """Log how many subscribers there are for the given topics"""
